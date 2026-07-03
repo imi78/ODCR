@@ -23,12 +23,6 @@
       "no": "The current SOP is assessed as inadequate to prevent recurrence."
     },
     {
-      "id": "c3",
-      "text": "Does this issue pose a risk to future operations if left unaddressed?",
-      "yes": "This issue poses a risk to future operations if left unaddressed.",
-      "no": "This issue is not assessed as a significant risk to future operations."
-    },
-    {
       "id": "c4",
       "text": "Is immediate corrective action required?",
       "yes": "Immediate corrective action is required.",
@@ -53,12 +47,6 @@
       "text": "Should the SOP be revised?",
       "yes": "Recommend the SOP be revised.",
       "no": "An SOP revision is not recommended at this time."
-    },
-    {
-      "id": "r4",
-      "text": "Should this report be distributed as a lessons-learned item to other units?",
-      "yes": "Recommend distributing this report as a lessons-learned item to other units.",
-      "no": "Distribution to other units is not recommended at this time."
     }
   ]
 }
