@@ -1,7 +1,7 @@
 // Service worker for the ODCR Field Report PWA.
 // Bump CACHE_NAME any time index.html (or other cached assets) change,
 // so returning users pick up the new version instead of a stale cache.
-const CACHE_NAME = 'odcr-report-cache-v1';
+const CACHE_NAME = 'odcr-report-cache-v2';
 const APP_SHELL = [
   './',
   './index.html',
