@@ -1,24 +1,6 @@
 {
   "O": [
     {
-      "id": "o1",
-      "text": "Did the event occur during a scheduled operation or exercise?",
-      "yes": "The event occurred during a scheduled operation or exercise.",
-      "no": "The event occurred outside of a scheduled operation or exercise."
-    },
-    {
-      "id": "o2",
-      "text": "Were all required personnel present at their designated posts?",
-      "yes": "All required personnel were present at their designated posts.",
-      "no": "Not all required personnel were present at their designated posts."
-    },
-    {
-      "id": "o3",
-      "text": "Did equipment and systems perform as expected?",
-      "yes": "Equipment and systems performed as expected.",
-      "no": "Equipment or systems did not perform as expected."
-    },
-    {
       "id": "o4",
       "text": "Was there a deviation from standard operating procedure (SOP)?",
       "yes": "A deviation from standard operating procedure (SOP) was observed.",
@@ -26,24 +8,6 @@
     }
   ],
   "D": [
-    {
-      "id": "d1",
-      "text": "Did a training gap contribute to the outcome?",
-      "yes": "A training gap was identified as a contributing factor.",
-      "no": "A training gap was not identified as a contributing factor."
-    },
-    {
-      "id": "d2",
-      "text": "Did equipment or maintenance issues contribute to the outcome?",
-      "yes": "Equipment or maintenance issues contributed to the outcome.",
-      "no": "Equipment and maintenance were not identified as contributing factors."
-    },
-    {
-      "id": "d3",
-      "text": "Did a communication breakdown contribute to the outcome?",
-      "yes": "A breakdown in communication contributed to the outcome.",
-      "no": "Communication was not identified as a contributing factor."
-    },
     {
       "id": "d4",
       "text": "Has this type of issue occurred before?",
@@ -53,22 +17,10 @@
   ],
   "C": [
     {
-      "id": "c1",
-      "text": "Did the mission or task ultimately meet its objective?",
-      "yes": "The mission or task ultimately met its stated objective.",
-      "no": "The mission or task did not fully meet its stated objective."
-    },
-    {
       "id": "c2",
       "text": "Is the current SOP adequate to prevent recurrence?",
       "yes": "The current SOP is assessed as adequate to prevent recurrence.",
       "no": "The current SOP is assessed as inadequate to prevent recurrence."
-    },
-    {
-      "id": "c3",
-      "text": "Does this issue pose a risk to future operations if left unaddressed?",
-      "yes": "This issue poses a risk to future operations if left unaddressed.",
-      "no": "This issue is not assessed as a significant risk to future operations."
     },
     {
       "id": "c4",
@@ -78,12 +30,6 @@
     }
   ],
   "R": [
-    {
-      "id": "r1",
-      "text": "Should this be escalated to command for review?",
-      "yes": "Recommend escalating this report to command for review.",
-      "no": "Escalation to command is not recommended at this time."
-    },
     {
       "id": "r2",
       "text": "Should additional training be conducted?",
