@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ODCR Field Report</title>
+
+<!-- PWA -->
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#1A73E8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ODCR Report">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
+
+:root{
+  --bg:#F1F3F4;
+  --panel:#FFFFFF;
+  --panel-2:#F1F3F4;
+  --line:#DADCE0;
+  --ink:#202124;
+  --ink-dim:#5F6368;
+  --phosphor:#1A73E8;       /* Google blue — primary */
+  --phosphor-dim:#5F6368;   /* neutral secondary text (was accent-dim) */
+  --primary-tint:#E8F0FE;
+  --stamp:#1967D2;          /* phase chip */
+  --amber:#1A73E8;          /* section accent, reuses primary blue */
+  --yes:#188038;
+  --yes-bg:#E6F4EA;
+  --no:#D93025;
+  --no-bg:#FCE8E6;
+  --radius:16px;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Roboto', sans-serif;
+  min-height:100vh;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding:32px 16px 64px;
+}
+
+.wrap{width:100%;max-width:620px;}
+
+/* Header */
+.masthead{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  padding-bottom:16px;
+  margin-bottom:22px;
+  gap:12px;
+}
+.masthead h1{
+  font-family:'Roboto', sans-serif;
+  font-weight:700;
+  font-size:24px;
+  letter-spacing:-0.2px;
+  margin:0 0 4px;
+  color:var(--ink);
+}
+.masthead .sub{
+  font-family:'Roboto', sans-serif;
+  font-size:13px;
+  font-weight:500;
+  color:var(--ink-dim);
+}
+.tag{
+  font-family:'Roboto', sans-serif;
+  font-size:11px;
+  font-weight:500;
+  letter-spacing:.2px;
+  color:var(--ink-dim);
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  padding:5px 12px;
+  border-radius:999px;
+  white-space:nowrap;
+}
+
+/* Progress */
+.progress-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:14px;
+  font-family:'Roboto Mono', monospace;
+  font-size:11px;
+  color:var(--ink-dim);
+}
+.phase-dots{display:flex;gap:6px;}
+.phase-dots span{
+  padding:4px 12px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  letter-spacing:.3px;
+  color:var(--ink-dim);
+  font-family:'Roboto', sans-serif;
+  font-weight:500;
+  font-size:11px;
+  transition:all .25s ease;
+}
+.phase-dots span.active{
+  color:#FFFFFF;
+  background:var(--phosphor);
+  border-color:var(--phosphor);
+}
+.phase-dots span.done{
+  color:var(--phosphor);
+  background:var(--primary-tint);
+  border-color:var(--primary-tint);
+}
+.counter{letter-spacing:.3px;}
+.bar-track{height:4px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:26px;}
+.bar-fill{height:100%;background:var(--phosphor);width:0%;transition:width .3s ease;}
+
+/* Panels */
+.panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:28px 26px;
+  position:relative;
+  box-shadow:0 1px 2px 0 rgba(60,64,67,.30), 0 1px 3px 1px rgba(60,64,67,.15);
+}
+
+/* Intake */
+.field{margin-bottom:18px;}
+.field label{
+  display:block;
+  font-family:'Roboto', sans-serif;
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:.2px;
+  color:var(--ink-dim);
+  margin-bottom:6px;
+}
+.field input, .field textarea{
+  width:100%;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  color:var(--ink);
+  font-family:'Roboto', sans-serif;
+  font-size:14px;
+  padding:11px 14px;
+  border-radius:8px;
+  outline:none;
+  transition:border-color .15s ease, background .15s ease;
+}
+.field input:focus, .field textarea:focus{border-color:var(--phosphor);border-width:1.5px;background:var(--panel);}
+.field textarea{resize:vertical;min-height:60px;font-family:'Roboto Mono', monospace;font-size:13px;}
+
+.btn{
+  font-family:'Roboto', sans-serif;
+  letter-spacing:.2px;
+  font-size:14px;
+  font-weight:500;
+  border:none;
+  border-radius:999px;
+  padding:11px 22px;
+  cursor:pointer;
+  transition:box-shadow .15s ease, background .15s ease;
+}
+.btn:active{box-shadow:none;}
+.btn-primary{background:var(--phosphor);color:#FFFFFF;box-shadow:0 1px 2px 0 rgba(60,64,67,.30), 0 1px 3px 1px rgba(60,64,67,.15);}
+.btn-primary:hover{background:#1765CC;}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink-dim);}
+.btn-ghost:hover{background:var(--panel-2);}
+.btn-full{width:100%;}
+
+/* Card stage */
+.stage{
+  height:340px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  touch-action:none;
+}
+.card{
+  width:100%;
+  max-width:420px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:0;
+  cursor:grab;
+  user-select:none;
+  position:relative;
+  box-shadow:0 1px 2px 0 rgba(60,64,67,.30), 0 4px 12px 2px rgba(60,64,67,.15);
+}
+.card:active{cursor:grabbing;}
+.stamp{
+  position:absolute;
+  top:18px;
+  left:22px;
+  background:var(--primary-tint);
+  color:var(--stamp);
+  font-family:'Roboto', sans-serif;
+  font-weight:500;
+  font-size:11px;
+  letter-spacing:.3px;
+  padding:5px 12px;
+  border-radius:999px;
+}
+.card-body{padding:66px 26px 26px;min-height:180px;display:flex;align-items:center;}
+.card-q{font-size:19px;line-height:1.4;font-weight:500;color:var(--ink);}
+.card-actions{
+  display:flex;
+  border-top:1px solid var(--line);
+}
+.opt{
+  flex:1;
+  padding:16px;
+  text-align:center;
+  font-family:'Roboto', sans-serif;
+  letter-spacing:.3px;
+  font-weight:500;
+  font-size:14px;
+  cursor:pointer;
+  transition:background .15s ease;
+}
+.opt-no{color:var(--no);border-right:1px solid var(--line);}
+.opt-no:hover{background:var(--no-bg);}
+.opt-yes{color:var(--yes);}
+.opt-yes:hover{background:var(--yes-bg);}
+
+.swipe-hint{
+  text-align:center;
+  font-family:'Roboto', sans-serif;
+  font-size:12px;
+  color:var(--ink-dim);
+  margin-top:14px;
+}
+
+.detail-panel{max-width:420px;margin:0 auto;width:100%;}
+.detail-panel .answer-echo{
+  font-family:'Roboto', sans-serif;
+  font-size:13px;
+  font-weight:500;
+  margin-bottom:14px;
+}
+.answer-echo.yes{color:var(--yes);}
+.answer-echo.no{color:var(--no);}
+.detail-actions{display:flex;gap:10px;margin-top:6px;}
+.detail-actions .btn{flex:1;}
+
+/* Report screen */
+.report-head{
+  font-family:'Roboto', sans-serif;
+  font-size:12px;
+  font-weight:500;
+  color:var(--ink-dim);
+  border-bottom:1px solid var(--line);
+  padding-bottom:12px;
+  margin-bottom:16px;
+}
+.report-meta-row{display:flex;justify-content:space-between;margin-bottom:4px;color:var(--ink-dim);font-size:13px;}
+.report-meta-row b{color:var(--ink);font-weight:600;}
+.report-section{margin-bottom:20px;}
+.report-section h3{
+  font-family:'Roboto', sans-serif;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.5px;
+  color:var(--amber);
+  margin:0 0 8px;
+  text-transform:uppercase;
+}
+.report-section p{
+  font-family:'Roboto Mono', monospace;
+  font-size:13px;
+  line-height:1.7;
+  color:var(--ink);
+  margin:0;
+  white-space:pre-wrap;
+}
+.report-actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;}
+.report-actions .btn{flex:1;min-width:130px;}
+
+@media (max-width:480px){
+  .masthead{flex-direction:column;align-items:flex-start;}
+  .card-q{font-size:17px;}
+}
+
+/* Question editor */
+.edit-phase{margin-bottom:26px;}
+.edit-phase h3{
+  font-family:'Roboto', sans-serif;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.5px;
+  color:var(--amber);
+  margin:0 0 12px;
+  text-transform:uppercase;
+}
+.edit-row{margin-bottom:10px;}
+.edit-sep{border:none;border-top:1px solid var(--line);margin:16px 0;}
+.link-row{display:flex;justify-content:flex-end;margin-bottom:14px;}
+.link-btn{
+  background:none;border:none;cursor:pointer;
+  font-family:'Roboto', sans-serif;
+  font-size:13px;font-weight:500;
+  color:var(--phosphor);
+  padding:0;
+}
+.link-btn:hover{text-decoration:underline;}
+
+.add-form{
+  background:var(--primary-tint);
+  border:1.5px dashed var(--phosphor);
+  border-radius:12px;
+  padding:16px 16px 6px;
+  margin-top:6px;
+}
+.add-form-label{
+  font-family:'Roboto', sans-serif;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+  color:var(--phosphor);
+  margin-bottom:10px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div>
+      <h1>ODCR FIELD REPORT</h1>
+      <div class="sub">Observation · Discussion · Conclusion · Recommendation</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="btn btn-ghost" id="install-btn" type="button" style="display:none;padding:8px 16px;font-size:13px;">⬇ Install App</button>
+      <div class="tag">EXERCISE USE ONLY</div>
+    </div>
+  </div>
+
+  <div id="app"></div>
+
+</div>
+
+<script>
+const PHASES = [
+  { key:'O', label:'OBS', title:'Observation' },
+  { key:'D', label:'DISC', title:'Discussion' },
+  { key:'C', label:'CONC', title:'Conclusion' },
+  { key:'R', label:'REC', title:'Recommendation' },
+];
+
+const DEFAULT_QUESTIONS = {
+  O: [
+    { id:'o1', text:'Did the event occur during a scheduled operation or exercise?',
+      yes:'The event occurred during a scheduled operation or exercise.',
+      no:'The event occurred outside of a scheduled operation or exercise.' },
+    { id:'o2', text:'Were all required personnel present at their designated posts?',
+      yes:'All required personnel were present at their designated posts.',
+      no:'Not all required personnel were present at their designated posts.' },
+    { id:'o3', text:'Did equipment and systems perform as expected?',
+      yes:'Equipment and systems performed as expected.',
+      no:'Equipment or systems did not perform as expected.' },
+    { id:'o4', text:'Was there a deviation from standard operating procedure (SOP)?',
+      yes:'A deviation from standard operating procedure (SOP) was observed.',
+      no:'No deviation from standard operating procedure was observed.' },
+  ],
+  D: [
+    { id:'d1', text:'Did a training gap contribute to the outcome?',
+      yes:'A training gap was identified as a contributing factor.',
+      no:'A training gap was not identified as a contributing factor.' },
+    { id:'d2', text:'Did equipment or maintenance issues contribute to the outcome?',
+      yes:'Equipment or maintenance issues contributed to the outcome.',
+      no:'Equipment and maintenance were not identified as contributing factors.' },
+    { id:'d3', text:'Did a communication breakdown contribute to the outcome?',
+      yes:'A breakdown in communication contributed to the outcome.',
+      no:'Communication was not identified as a contributing factor.' },
+    { id:'d4', text:'Has this type of issue occurred before?',
+      yes:'This is a recurring issue that has been observed previously.',
+      no:'This does not appear to be a recurring issue.' },
+  ],
+  C: [
+    { id:'c1', text:'Did the mission or task ultimately meet its objective?',
+      yes:'The mission or task ultimately met its stated objective.',
+      no:'The mission or task did not fully meet its stated objective.' },
+    { id:'c2', text:'Is the current SOP adequate to prevent recurrence?',
+      yes:'The current SOP is assessed as adequate to prevent recurrence.',
+      no:'The current SOP is assessed as inadequate to prevent recurrence.' },
+    { id:'c3', text:'Does this issue pose a risk to future operations if left unaddressed?',
+      yes:'This issue poses a risk to future operations if left unaddressed.',
+      no:'This issue is not assessed as a significant risk to future operations.' },
+    { id:'c4', text:'Is immediate corrective action required?',
+      yes:'Immediate corrective action is required.',
+      no:'Immediate corrective action is not required at this time.' },
+  ],
+  R: [
+    { id:'r1', text:'Should this be escalated to command for review?',
+      yes:'Recommend escalating this report to command for review.',
+      no:'Escalation to command is not recommended at this time.' },
+    { id:'r2', text:'Should additional training be conducted?',
+      yes:'Recommend additional training be conducted.',
+      no:'Additional training is not recommended at this time.' },
+    { id:'r3', text:'Should the SOP be revised?',
+      yes:'Recommend the SOP be revised.',
+      no:'An SOP revision is not recommended at this time.' },
+    { id:'r4', text:'Should this report be distributed as a lessons-learned item to other units?',
+      yes:'Recommend distributing this report as a lessons-learned item to other units.',
+      no:'Distribution to other units is not recommended at this time.' },
+  ],
+};
+
+function cloneDefaults(){
+  return JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
+}
+
+function makeEmptyDrafts(){
+  const d = {};
+  PHASES.forEach(p => { d[p.key] = { text:'', yes:'', no:'' }; });
+  return d;
+}
+
+const STORAGE_KEY = 'odcr-field-report-state-v1';
+
+function defaultState(){
+  return {
+    screen:'intake', // intake | edit | card | detail | report
+    meta:{ title:'', unit:'', date:'', author:'' },
+    questions: cloneDefaults(),
+    draft: makeEmptyDrafts(),
+    flat:[],
+    index:0,
+    answers:{}, // id -> {answer:'yes'|'no', detail:''}
+  };
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    const saved = JSON.parse(raw);
+    const base = defaultState();
+    // Shallow-merge so any newer fields added later still get sane defaults.
+    return Object.assign(base, saved, {
+      meta: Object.assign(base.meta, saved.meta || {}),
+      questions: saved.questions || base.questions,
+      draft: Object.assign(base.draft, saved.draft || {}),
+    });
+  }catch(e){
+    console.warn('Could not read saved report, starting fresh.', e);
+    return defaultState();
+  }
+}
+
+function persist(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){
+    console.warn('Could not save report locally.', e);
+  }
+}
+
+let state = loadState();
+
+const app = document.getElementById('app');
+
+function esc(s){
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function questionCount(){
+  return PHASES.reduce((n,p)=> n + state.questions[p.key].length, 0);
+}
+
+function buildFlat(){
+  return PHASES.flatMap(p => state.questions[p.key].map(q => ({...q, phase:p.key})));
+}
+
+function render(){
+  persist();
+  if(state.screen==='intake') return renderIntake();
+  if(state.screen==='edit') return renderEdit();
+  if(state.screen==='card') return renderCard();
+  if(state.screen==='detail') return renderDetail();
+  if(state.screen==='report') return renderReport();
+}
+
+function renderIntake(){
+  const n = questionCount();
+  app.innerHTML = `
+    <div class="panel">
+      <div class="field">
+        <label>Report Title</label>
+        <input id="f-title" type="text" placeholder="e.g. Night Convoy Exercise, Sector 4" value="${esc(state.meta.title)}">
+      </div>
+      <div class="field">
+        <label>Unit</label>
+        <input id="f-unit" type="text" placeholder="e.g. 2nd Platoon, B Co." value="${esc(state.meta.unit)}">
+      </div>
+      <div class="field">
+        <label>Date</label>
+        <input id="f-date" type="date" value="${esc(state.meta.date)}">
+      </div>
+      <div class="field">
+        <label>Prepared By (optional)</label>
+        <input id="f-author" type="text" placeholder="Name / rank" value="${esc(state.meta.author)}">
+      </div>
+      <div class="link-row">
+        <button class="link-btn" id="clear-saved" type="button" style="color:var(--ink-dim);margin-right:auto;">Clear saved data</button>
+        <button class="link-btn" id="edit-q" type="button">Customize the ${n} questions →</button>
+      </div>
+      <button class="btn btn-primary btn-full" id="begin">Begin Report — ${n} Question${n===1?'':'s'}</button>
+      <div class="swipe-hint" style="margin-top:10px;">Your progress is saved automatically on this device.</div>
+    </div>
+  `;
+  document.getElementById('f-title').oninput = e => { state.meta.title = e.target.value; persist(); };
+  document.getElementById('f-unit').oninput = e => { state.meta.unit = e.target.value; persist(); };
+  document.getElementById('f-date').oninput = e => { state.meta.date = e.target.value; persist(); };
+  document.getElementById('f-author').oninput = e => { state.meta.author = e.target.value; persist(); };
+  document.getElementById('clear-saved').onclick = () => {
+    if(confirm('Clear the saved report from this device? This cannot be undone.')){
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+      state = defaultState();
+      render();
+    }
+  };
+  document.getElementById('edit-q').onclick = () => { state.screen='edit'; render(); };
+  document.getElementById('begin').onclick = () => {
+    state.meta.title = document.getElementById('f-title').value.trim();
+    state.meta.unit = document.getElementById('f-unit').value.trim();
+    state.meta.date = document.getElementById('f-date').value;
+    state.meta.author = document.getElementById('f-author').value.trim();
+    state.flat = buildFlat();
+    if(state.flat.length===0){ alert('Add at least one question before starting.'); state.screen='edit'; render(); return; }
+    state.index=0;
+    state.answers={};
+    state.screen='card';
+    render();
+  };
+}
+
+function renderEdit(){
+  let html = `<div class="panel"><div class="report-head">Customize Questions</div>`;
+  PHASES.forEach(p=>{
+    html += `<div class="edit-phase"><h3>${p.title}</h3>`;
+    state.questions[p.key].forEach((q,qi)=>{
+      html += `
+        <div class="edit-row" data-phase="${p.key}" data-qi="${qi}">
+          <div class="field"><label>Question (shown on card)</label><input class="e-text" type="text" value="${esc(q.text)}"></div>
+          <div class="field"><label>Report sentence if answered YES</label><input class="e-yes" type="text" value="${esc(q.yes)}"></div>
+          <div class="field"><label>Report sentence if answered NO</label><input class="e-no" type="text" value="${esc(q.no)}"></div>
+          <button class="btn btn-ghost e-del" type="button">Remove Question</button>
+        </div>
+        <hr class="edit-sep">
+      `;
+    });
+    const d = state.draft[p.key];
+    html += `
+      <div class="add-form" data-phase="${p.key}">
+        <div class="add-form-label">New question</div>
+        <div class="field"><label>Question (shown on card)</label><input class="n-text" type="text" placeholder="e.g. Was the objective area secured before insertion?" value="${esc(d.text)}"></div>
+        <div class="field"><label>Report sentence if answered YES</label><input class="n-yes" type="text" placeholder="e.g. The objective area was secured before insertion." value="${esc(d.yes)}"></div>
+        <div class="field"><label>Report sentence if answered NO</label><input class="n-no" type="text" placeholder="e.g. The objective area was not secured before insertion." value="${esc(d.no)}"></div>
+        <button class="btn btn-primary n-add" data-phase="${p.key}" type="button">+ Add Question to ${p.title}</button>
+      </div>
+    </div>`;
+  });
+  html += `
+    <div class="report-actions">
+      <button class="btn btn-ghost" id="e-reset" type="button">Reset to Defaults</button>
+      <button class="btn btn-primary" id="e-done" type="button">Save &amp; Back</button>
+    </div>
+  </div>`;
+  app.innerHTML = html;
+
+  app.querySelectorAll('.edit-row').forEach(row=>{
+    const phase = row.dataset.phase, qi = +row.dataset.qi;
+    row.querySelector('.e-text').oninput = e => { state.questions[phase][qi].text = e.target.value; persist(); };
+    row.querySelector('.e-yes').oninput  = e => { state.questions[phase][qi].yes  = e.target.value; persist(); };
+    row.querySelector('.e-no').oninput   = e => { state.questions[phase][qi].no   = e.target.value; persist(); };
+    row.querySelector('.e-del').onclick  = () => { state.questions[phase].splice(qi,1); renderEdit(); };
+  });
+  app.querySelectorAll('.add-form').forEach(form=>{
+    const phase = form.dataset.phase;
+    form.querySelector('.n-text').oninput = e => { state.draft[phase].text = e.target.value; persist(); };
+    form.querySelector('.n-yes').oninput  = e => { state.draft[phase].yes  = e.target.value; persist(); };
+    form.querySelector('.n-no').oninput   = e => { state.draft[phase].no   = e.target.value; persist(); };
+  });
+  app.querySelectorAll('.n-add').forEach(btn=>{
+    btn.onclick = () => {
+      const phase = btn.dataset.phase;
+      const draft = state.draft[phase];
+      const text = draft.text.trim();
+      if(!text){ alert('Write the question text before adding it.'); return; }
+      const newId = `${phase}_c${Date.now()}${Math.floor(Math.random()*1000)}`;
+      state.questions[phase].push({
+        id:newId,
+        text,
+        yes: draft.yes.trim() || `Yes — ${text.replace(/\?$/,'')}.`,
+        no:  draft.no.trim()  || `No — ${text.replace(/\?$/,'')}.`,
+      });
+      state.draft[phase] = { text:'', yes:'', no:'' };
+      renderEdit();
+    };
+  });
+  document.getElementById('e-reset').onclick = () => {
+    if(confirm('Reset all questions to the default set? This discards your edits.')){
+      state.questions = cloneDefaults();
+      renderEdit();
+    }
+  };
+  document.getElementById('e-done').onclick = () => { state.screen='intake'; render(); };
+}
+
+function progressHeader(){
+  const q = state.flat[state.index];
+  const currentPhase = q ? q.phase : PHASES[PHASES.length-1].key;
+  const phaseFirstIndex = {};
+  state.flat.forEach((item,i)=>{ if(!(item.phase in phaseFirstIndex)) phaseFirstIndex[item.phase]=i; });
+
+  const dots = PHASES.map(p=>{
+    let cls='';
+    if(p.key===currentPhase) cls='active';
+    else if(p.key in phaseFirstIndex && phaseFirstIndex[p.key] < state.index) cls='done';
+    return `<span class="${cls}">${p.label}</span>`;
+  }).join('');
+
+  const pct = Math.round((state.index/state.flat.length)*100);
+
+  return `
+    <div class="progress-row">
+      <div class="phase-dots">${dots}</div>
+      <div class="counter">CARD ${String(state.index+1).padStart(2,'0')}/${state.flat.length}</div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+  `;
+}
+
+function renderCard(){
+  const q = state.flat[state.index];
+  const phaseTitle = PHASES.find(p=>p.key===q.phase).label;
+
+  app.innerHTML = `
+    ${progressHeader()}
+    <div class="stage">
+      <div class="card" id="card">
+        <div class="stamp">${phaseTitle}</div>
+        <div class="card-body"><div class="card-q">${esc(q.text)}</div></div>
+        <div class="card-actions">
+          <div class="opt opt-no" id="opt-no">✕ NO</div>
+          <div class="opt opt-yes" id="opt-yes">✓ YES</div>
+        </div>
+      </div>
+    </div>
+    <div class="swipe-hint">tap an answer — or drag the card left / right</div>
+  `;
+
+  document.getElementById('opt-no').addEventListener('click', () => answer('no'));
+  document.getElementById('opt-yes').addEventListener('click', () => answer('yes'));
+
+  const card = document.getElementById('card');
+  let startX=0, dx=0, dragging=false;
+
+  card.addEventListener('pointerdown', e=>{
+    if(e.target.closest('.opt')) return; // let button clicks fire normally, don't start a drag
+    dragging=true; startX=e.clientX; dx=0;
+    card.setPointerCapture(e.pointerId);
+    card.style.transition='none';
+  });
+  card.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    dx = e.clientX-startX;
+    card.style.transform = `translateX(${dx}px) rotate(${dx/18}deg)`;
+  });
+  function endDrag(){
+    if(!dragging) return;
+    dragging=false;
+    card.style.transition='transform .25s ease';
+    if(dx>110){ card.style.transform=`translateX(600px) rotate(20deg)`; setTimeout(()=>answer('yes'),150); }
+    else if(dx<-110){ card.style.transform=`translateX(-600px) rotate(-20deg)`; setTimeout(()=>answer('no'),150); }
+    else { card.style.transform='translateX(0) rotate(0)'; }
+    dx=0;
+  }
+  card.addEventListener('pointerup', endDrag);
+  card.addEventListener('pointercancel', endDrag);
+}
+
+function answer(val){
+  const q = state.flat[state.index];
+  if(!state.answers[q.id]) state.answers[q.id] = {answer:val, detail:''};
+  else state.answers[q.id].answer = val;
+  state.screen='detail';
+  render();
+}
+
+function renderDetail(){
+  const q = state.flat[state.index];
+  const a = state.answers[q.id];
+  app.innerHTML = `
+    ${progressHeader()}
+    <div class="panel">
+      <div class="detail-panel">
+        <div class="answer-echo ${a.answer}">${a.answer==='yes' ? '✓ YES' : '✕ NO'} — ${esc(q.text)}</div>
+        <div class="field">
+          <label>Add specifics (optional)</label>
+          <textarea id="detail-input" placeholder="e.g. time, location, unit, equipment involved…">${esc(a.detail)}</textarea>
+        </div>
+        <div class="detail-actions">
+          <button class="btn btn-ghost" id="back" type="button">Change Answer</button>
+          <button class="btn btn-primary" id="continue" type="button">Continue →</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('detail-input').oninput = e => { a.detail = e.target.value; persist(); };
+  document.getElementById('back').onclick = () => { state.screen='card'; render(); };
+  document.getElementById('continue').onclick = () => {
+    if(state.index < state.flat.length-1){ state.index++; state.screen='card'; }
+    else { state.screen='report'; }
+    render();
+  };
+}
+
+function buildReportText(){
+  const lines = [];
+  const title = state.meta.title || 'Untitled Report';
+  lines.push(`ODCR FIELD REPORT`);
+  lines.push(`${'-'.repeat(40)}`);
+  lines.push(`Title:    ${title}`);
+  if(state.meta.unit) lines.push(`Unit:     ${state.meta.unit}`);
+  if(state.meta.date) lines.push(`Date:     ${state.meta.date}`);
+  if(state.meta.author) lines.push(`Prepared: ${state.meta.author}`);
+  lines.push('');
+
+  PHASES.forEach(p=>{
+    const qs = state.questions[p.key];
+    if(!qs.length) return;
+    lines.push(`${p.title.toUpperCase()}`);
+    qs.forEach(q=>{
+      const a = state.answers[q.id];
+      if(!a) return;
+      let sentence = q[a.answer];
+      if(a.detail && a.detail.trim()) sentence += ` Detail: ${a.detail.trim()}`;
+      lines.push(`- ${sentence}`);
+    });
+    lines.push('');
+  });
+
+  return lines.join('\n').trim();
+}
+
+function renderReport(){
+  const reportText = buildReportText();
+
+  app.innerHTML = `
+    <div class="panel">
+      <div class="report-head">Compiled Report</div>
+      <div class="report-meta-row"><span>Title</span><b>${esc(state.meta.title||'Untitled Report')}</b></div>
+      ${state.meta.unit ? `<div class="report-meta-row"><span>Unit</span><b>${esc(state.meta.unit)}</b></div>` : ''}
+      ${state.meta.date ? `<div class="report-meta-row"><span>Date</span><b>${esc(state.meta.date)}</b></div>` : ''}
+      ${state.meta.author ? `<div class="report-meta-row"><span>Prepared by</span><b>${esc(state.meta.author)}</b></div>` : ''}
+
+      <div style="margin-top:20px;">
+        ${PHASES.filter(p=>state.questions[p.key].length).map(p=>`
+          <div class="report-section">
+            <h3>${p.title}</h3>
+            <p>${state.questions[p.key].map(q=>{
+              const a = state.answers[q.id];
+              if(!a) return '';
+              let s = esc(q[a.answer]);
+              if(a.detail && a.detail.trim()) s += ` Detail: ${esc(a.detail.trim())}`;
+              return `— ${s}`;
+            }).filter(Boolean).join('\n')}</p>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="report-actions">
+        <button class="btn btn-ghost" id="restart" type="button">Start New Report</button>
+        <button class="btn btn-ghost" id="copy" type="button">Copy Report</button>
+        <button class="btn btn-ghost" id="download" type="button">Download .txt</button>
+        <button class="btn btn-primary" id="email" type="button">✉ Email Report</button>
+      </div>
+      <div class="swipe-hint" id="email-note" style="margin-top:10px;"></div>
+    </div>
+  `;
+
+  document.getElementById('restart').onclick = () => {
+    const keepQuestions = state.questions;
+    state = { screen:'intake', meta:{title:'',unit:'',date:'',author:''}, questions:keepQuestions, draft:makeEmptyDrafts(), flat:[], index:0, answers:{} };
+    render();
+  };
+  document.getElementById('copy').onclick = async () => {
+    try{
+      await navigator.clipboard.writeText(reportText);
+      const btn = document.getElementById('copy');
+      const old = btn.textContent;
+      btn.textContent='Copied ✓';
+      setTimeout(()=>btn.textContent=old, 1400);
+    }catch(e){ alert('Could not copy — select and copy manually.'); }
+  };
+  function reportFilename(){
+    const safeName = (state.meta.title||'odcr-report').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+    return `${safeName || 'odcr-report'}.txt`;
+  }
+
+  function downloadReport(){
+    const blob = new Blob([reportText], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = reportFilename();
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('download').onclick = downloadReport;
+
+  document.getElementById('email').onclick = async () => {
+    const filename = reportFilename();
+    const subject = `ODCR Field Report — ${state.meta.title || 'Untitled Report'}`;
+    const note = document.getElementById('email-note');
+
+    // Preferred path: hand the .txt off to the OS share sheet (Mail app, etc.)
+    // as a real file attachment. Supported on most mobile browsers and some
+    // desktop browsers over HTTPS.
+    if(navigator.canShare && navigator.share){
+      try{
+        const file = new File([reportText], filename, {type:'text/plain'});
+        if(navigator.canShare({files:[file]})){
+          await navigator.share({
+            files:[file],
+            title: subject,
+            text: `${subject} — see attached report.`,
+          });
+          return;
+        }
+      }catch(err){
+        if(err && err.name === 'AbortError') return; // user cancelled the share sheet
+        // fall through to mailto fallback below
+      }
+    }
+
+    // Fallback: browsers cannot attach files to a mailto: link, so we download
+    // the file and open the default mail client with the report pre-filled
+    // in the body, prompting the user to attach the downloaded file.
+    downloadReport();
+    const body =
+      `The report "${filename}" has been downloaded to your device — please attach it to this email.\n\n` +
+      `--- Report contents (for reference) ---\n\n${reportText}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    if(note) note.textContent = `"${filename}" was downloaded — attach it in the email window that just opened.`;
+  };
+}
+
+render();
+
+// --- PWA: service worker registration ---------------------------------
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn('Service worker registration failed:', err);
+    });
+  });
+}
+
+// --- PWA: "Install App" button ------------------------------------------
+let deferredInstallPrompt = null;
+const installBtn = document.getElementById('install-btn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if(installBtn) installBtn.style.display = 'inline-block';
+});
+
+if(installBtn){
+  installBtn.addEventListener('click', async () => {
+    if(!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    installBtn.style.display = 'none';
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  if(installBtn) installBtn.style.display = 'none';
+  deferredInstallPrompt = null;
+});
+</script>
+
+</body>
+</html>
