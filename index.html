@@ -937,14 +937,12 @@ window.addEventListener('appinstalled', () => {
 
 // --- Load a centrally-maintained question set (questions.json), if present ---
 // This lets you publish question changes just by uploading a questions.json
-// file next to index.html — no code editing required. It only applies for
-// visitors who have no saved report yet, so it never overwrites someone's
-// in-progress answers or their own local customizations.
+// file next to index.html — no code editing required. It runs on every page
+// load (not just for first-time visitors) so published edits reach devices
+// that already have a saved report. It only ever touches state.questions —
+// it never touches state.answers/meta/progress, so it won't disturb an
+// in-progress report.
 (function loadPublishedQuestions(){
-  let hasSavedState = false;
-  try { hasSavedState = !!localStorage.getItem(STORAGE_KEY); } catch(e){}
-  if(hasSavedState) return;
-
   fetch('./questions.json', {cache:'no-store'})
     .then(r => r.ok ? r.json() : null)
     .then(data => {
@@ -952,11 +950,12 @@ window.addEventListener('appinstalled', () => {
       const validShape = PHASES.every(p => Array.isArray(data[p.key]) &&
         data[p.key].every(q => q && typeof q.id==='string' && typeof q.text==='string'));
       if(!validShape) return;
+      if(JSON.stringify(data) === JSON.stringify(state.questions)) return; // already in sync
       state.questions = data;
       persist();
-      if(state.screen==='intake') render();
+      if(state.screen==='intake' || state.screen==='edit') render();
     })
-    .catch(() => { /* no questions.json yet, offline, or opened via file:// — built-in defaults stay in effect */ });
+    .catch(() => { /* no questions.json published yet, offline, or opened via file:// — keep current set */ });
 })();
 </script>
 
