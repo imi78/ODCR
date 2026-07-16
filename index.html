@@ -778,11 +778,11 @@ function renderDetail(){
 function buildReportText(){
   const lines = [];
   const title = state.meta.title || 'Untitled Report';
-  lines.push(`ODCR FIELD REPORT`);
+  lines.push(`ODCR REPORT`);
   lines.push(`${'-'.repeat(40)}`);
   lines.push(`Title:    ${title}`);
   if(state.meta.unit) lines.push(`Unit:     ${state.meta.unit}`);
-  if(state.meta.date) lines.push(`Date:     ${state.meta.date}`);
+  if(state.meta.date) lines.push(`Date:     ${formatDateDDMMYYYY(state.meta.date)}`);
   if(state.meta.author) lines.push(`Prepared: ${state.meta.author}`);
   lines.push('');
 
