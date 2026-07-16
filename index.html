@@ -298,19 +298,6 @@ body{
   .card-q{font-size:17px;}
 }
 
-/* Question editor */
-.edit-phase{margin-bottom:26px;}
-.edit-phase h3{
-  font-family:'Roboto', sans-serif;
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:.5px;
-  color:var(--amber);
-  margin:0 0 12px;
-  text-transform:uppercase;
-}
-.edit-row{margin-bottom:10px;}
-.edit-sep{border:none;border-top:1px solid var(--line);margin:16px 0;}
 .link-row{display:flex;justify-content:flex-end;margin-bottom:14px;}
 .link-btn{
   background:none;border:none;cursor:pointer;
@@ -320,23 +307,6 @@ body{
   padding:0;
 }
 .link-btn:hover{text-decoration:underline;}
-
-.add-form{
-  background:var(--primary-tint);
-  border:1.5px dashed var(--phosphor);
-  border-radius:12px;
-  padding:16px 16px 6px;
-  margin-top:6px;
-}
-.add-form-label{
-  font-family:'Roboto', sans-serif;
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:.4px;
-  text-transform:uppercase;
-  color:var(--phosphor);
-  margin-bottom:10px;
-}
 </style>
 </head>
 <body>
@@ -376,20 +346,13 @@ function cloneDefaults(){
   return JSON.parse(JSON.stringify(EMPTY_QUESTIONS));
 }
 
-function makeEmptyDrafts(){
-  const d = {};
-  PHASES.forEach(p => { d[p.key] = { text:'', yes:'', no:'' }; });
-  return d;
-}
-
 const STORAGE_KEY = 'odcr-field-report-state-v1';
 
 function defaultState(){
   return {
-    screen:'intake', // intake | edit | card | detail | report
+    screen:'intake', // intake | card | detail | report
     meta:{ title:'', unit:'', date:'', author:'' },
     questions: cloneDefaults(),
-    draft: makeEmptyDrafts(),
     flat:[],
     index:0,
     answers:{}, // id -> {answer:'yes'|'no', detail:''}
@@ -406,7 +369,6 @@ function loadState(){
     return Object.assign(base, saved, {
       meta: Object.assign(base.meta, saved.meta || {}),
       questions: saved.questions || base.questions,
-      draft: Object.assign(base.draft, saved.draft || {}),
     });
   }catch(e){
     console.warn('Could not read saved report, starting fresh.', e);
@@ -471,7 +433,6 @@ function flatpickrParse(dateStr) {
 function render(){
   persist();
   if(state.screen==='intake') return renderIntake();
-  if(state.screen==='edit') return renderEdit();
   if(state.screen==='card') return renderCard();
   if(state.screen==='detail') return renderDetail();
   if(state.screen==='report') return renderReport();
@@ -499,11 +460,10 @@ function renderIntake(){
       </div>
       <div class="link-row">
         <button class="link-btn" id="clear-saved" type="button" style="color:var(--ink-dim);margin-right:auto;">Clear saved data</button>
-        <button class="link-btn" id="edit-q" type="button">Customize the ${n} questions →</button>
       </div>
       <button class="btn btn-primary btn-full" id="begin" ${n===0?'disabled':''}>Begin Report — ${n} Question${n===1?'':'s'}</button>
       <div class="swipe-hint" style="margin-top:10px;">${n===0
-        ? 'No questions loaded yet — add a questions.json file next to index.html, or use "Customize the questions" to add some.'
+        ? 'No questions loaded — add a questions.json file next to index.html to publish your question set.'
         : 'Your progress is saved automatically on this device.'}</div>
     </div>
   `;
@@ -523,14 +483,13 @@ function renderIntake(){
       render();
     }
   };
-  document.getElementById('edit-q').onclick = () => { state.screen='edit'; render(); };
   document.getElementById('begin').onclick = () => {
     state.meta.title = document.getElementById('f-title').value.trim();
     state.meta.unit = document.getElementById('f-unit').value.trim();
     state.meta.date = document.getElementById('f-date').value;
     state.meta.author = document.getElementById('f-author').value.trim();
     state.flat = buildFlat();
-    if(state.flat.length===0){ alert('Add at least one question before starting.'); state.screen='edit'; render(); return; }
+    if(state.flat.length===0){ alert('No questions are loaded — add a questions.json file next to index.html first.'); render(); return; }
     state.index=0;
     state.answers={};
     state.screen='card';
@@ -538,126 +497,6 @@ function renderIntake(){
   };
 }
 
-function renderEdit(){
-  let html = `<div class="panel"><div class="report-head">Customize Questions</div>`;
-  PHASES.forEach(p=>{
-    html += `<div class="edit-phase"><h3>${p.title}</h3>`;
-    state.questions[p.key].forEach((q,qi)=>{
-      html += `
-        <div class="edit-row" data-phase="${p.key}" data-qi="${qi}">
-          <div class="field"><label>Question (shown on card)</label><input class="e-text" type="text" value="${esc(q.text)}"></div>
-          <div class="field"><label>Report sentence if answered YES</label><input class="e-yes" type="text" value="${esc(q.yes)}"></div>
-          <div class="field"><label>Report sentence if answered NO</label><input class="e-no" type="text" value="${esc(q.no)}"></div>
-          <button class="btn btn-ghost e-del" type="button">Remove Question</button>
-        </div>
-        <hr class="edit-sep">
-      `;
-    });
-    const d = state.draft[p.key];
-    html += `
-      <div class="add-form" data-phase="${p.key}">
-        <div class="add-form-label">New question</div>
-        <div class="field"><label>Question (shown on card)</label><input class="n-text" type="text" placeholder="e.g. Was the objective area secured before insertion?" value="${esc(d.text)}"></div>
-        <div class="field"><label>Report sentence if answered YES</label><input class="n-yes" type="text" placeholder="e.g. The objective area was secured before insertion." value="${esc(d.yes)}"></div>
-        <div class="field"><label>Report sentence if answered NO</label><input class="n-no" type="text" placeholder="e.g. The objective area was not secured before insertion." value="${esc(d.no)}"></div>
-        <button class="btn btn-primary n-add" data-phase="${p.key}" type="button">+ Add Question to ${p.title}</button>
-      </div>
-    </div>`;
-  });
-  html += `
-    <div class="report-actions">
-      <button class="btn btn-ghost" id="e-reset" type="button">Reload Published Questions</button>
-      <button class="btn btn-ghost" id="e-import" type="button">⭱ Import questions.json</button>
-      <button class="btn btn-ghost" id="e-export" type="button">⭳ Export questions.json</button>
-      <button class="btn btn-primary" id="e-done" type="button">Save &amp; Back</button>
-    </div>
-    <input type="file" id="e-import-file" accept="application/json,.json" style="display:none;">
-    <div class="swipe-hint" style="margin-top:10px;">Export a questions.json file to edit offline or publish to your site. Import loads one back in.</div>
-  </div>`;
-  app.innerHTML = html;
-
-  app.querySelectorAll('.edit-row').forEach(row=>{
-    const phase = row.dataset.phase, qi = +row.dataset.qi;
-    row.querySelector('.e-text').oninput = e => { state.questions[phase][qi].text = e.target.value; persist(); };
-    row.querySelector('.e-yes').oninput  = e => { state.questions[phase][qi].yes  = e.target.value; persist(); };
-    row.querySelector('.e-no').oninput   = e => { state.questions[phase][qi].no   = e.target.value; persist(); };
-    row.querySelector('.e-del').onclick  = () => { state.questions[phase].splice(qi,1); renderEdit(); };
-  });
-  app.querySelectorAll('.add-form').forEach(form=>{
-    const phase = form.dataset.phase;
-    form.querySelector('.n-text').oninput = e => { state.draft[phase].text = e.target.value; persist(); };
-    form.querySelector('.n-yes').oninput  = e => { state.draft[phase].yes  = e.target.value; persist(); };
-    form.querySelector('.n-no').oninput   = e => { state.draft[phase].no   = e.target.value; persist(); };
-  });
-  app.querySelectorAll('.n-add').forEach(btn=>{
-    btn.onclick = () => {
-      const phase = btn.dataset.phase;
-      const draft = state.draft[phase];
-      const text = draft.text.trim();
-      if(!text){ alert('Write the question text before adding it.'); return; }
-      const newId = `${phase}_c${Date.now()}${Math.floor(Math.random()*1000)}`;
-      state.questions[phase].push({
-        id:newId,
-        text,
-        yes: draft.yes.trim() || `Yes — ${text.replace(/\?$/,'')}.`,
-        no:  draft.no.trim()  || `No — ${text.replace(/\?$/,'')}.`,
-      });
-      state.draft[phase] = { text:'', yes:'', no:'' };
-      renderEdit();
-    };
-  });
-  document.getElementById('e-reset').onclick = async () => {
-    if(!confirm('Reload questions from the published questions.json? This discards your local edits.')) return;
-    const btn = document.getElementById('e-reset');
-    const old = btn.textContent;
-    btn.textContent = 'Reloading…';
-    btn.disabled = true;
-    const data = await fetchPublishedQuestions();
-    if(data){
-      state.questions = data;
-      renderEdit();
-    }else{
-      alert('Could not load questions.json — check that the file exists next to index.html and is reachable.');
-      btn.textContent = old;
-      btn.disabled = false;
-    }
-  };
-  document.getElementById('e-export').onclick = () => {
-    const blob = new Blob([JSON.stringify(state.questions, null, 2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'questions.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-  const importInput = document.getElementById('e-import-file');
-  document.getElementById('e-import').onclick = () => importInput.click();
-  importInput.onchange = () => {
-    const file = importInput.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try{
-        const data = JSON.parse(reader.result);
-        const validShape = PHASES.every(p => Array.isArray(data[p.key]) &&
-          data[p.key].every(q => q && typeof q.id==='string' && typeof q.text==='string'));
-        if(!validShape){
-          alert('That file doesn\'t look like a valid questions.json (expected O/D/C/R arrays of {id, text, yes, no}).');
-          return;
-        }
-        state.questions = data;
-        persist();
-        renderEdit();
-      }catch(e){
-        alert('Could not read that file as JSON: ' + e.message);
-      }
-    };
-    reader.readAsText(file);
-    importInput.value = '';
-  };
-  document.getElementById('e-done').onclick = () => { state.screen='intake'; render(); };
-}
 
 function progressHeader(){
   const q = state.flat[state.index];
@@ -839,7 +678,7 @@ function renderReport(){
     btn.disabled = true;
     const fresh = await fetchPublishedQuestions();
     const questions = fresh || state.questions; // fall back to what we already have if unreachable
-    state = { screen:'intake', meta:{title:'',unit:'',date:'',author:''}, questions, draft:makeEmptyDrafts(), flat:[], index:0, answers:{} };
+    state = { screen:'intake', meta:{title:'',unit:'',date:'',author:''}, questions, flat:[], index:0, answers:{} };
     render();
   };
   document.getElementById('copy').onclick = async () => {
@@ -911,8 +750,7 @@ function renderReport(){
 // read from localStorage/cookies. cache:'no-store' forces a real network
 // request every time, so editing questions.json and reloading (or starting
 // a new report) always shows the latest published version. This function
-// is used on startup, by "Start New Report", and by the "Reload Published
-// Questions" button in the editor.
+// is used on startup and by "Start New Report".
 function fetchPublishedQuestions(){
   return fetch('./questions.json', {cache:'no-store'})
     .then(r => r.ok ? r.json() : null)
