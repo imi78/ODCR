@@ -14,6 +14,11 @@
 <meta name="apple-mobile-web-app-title" content="ODCR Report">
 <link rel="icon" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
+
+<!-- Flatpickr: gives every browser/OS the same dd/mm/yyyy date picker -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
 
@@ -158,6 +163,7 @@ body{
 }
 .field input:focus, .field textarea:focus{border-color:var(--phosphor);border-width:1.5px;background:var(--panel);}
 .field textarea{resize:vertical;min-height:60px;font-family:'Roboto Mono', monospace;font-size:13px;}
+.field input[readonly]{cursor:pointer;background:var(--panel-2);}
 
 .btn{
   font-family:'Roboto', sans-serif;
@@ -359,67 +365,15 @@ const PHASES = [
   { key:'R', label:'REC', title:'Recommendation' },
 ];
 
-const DEFAULT_QUESTIONS = {
-  O: [
-    { id:'o1', text:'Did the event occur during a scheduled operation or exercise?',
-      yes:'The event occurred during a scheduled operation or exercise.',
-      no:'The event occurred outside of a scheduled operation or exercise.' },
-    { id:'o2', text:'Were all required personnel present at their designated posts?',
-      yes:'All required personnel were present at their designated posts.',
-      no:'Not all required personnel were present at their designated posts.' },
-    { id:'o3', text:'Did equipment and systems perform as expected?',
-      yes:'Equipment and systems performed as expected.',
-      no:'Equipment or systems did not perform as expected.' },
-    { id:'o4', text:'Was there a deviation from standard operating procedure (SOP)?',
-      yes:'A deviation from standard operating procedure (SOP) was observed.',
-      no:'No deviation from standard operating procedure was observed.' },
-  ],
-  D: [
-    { id:'d1', text:'Did a training gap contribute to the outcome?',
-      yes:'A training gap was identified as a contributing factor.',
-      no:'A training gap was not identified as a contributing factor.' },
-    { id:'d2', text:'Did equipment or maintenance issues contribute to the outcome?',
-      yes:'Equipment or maintenance issues contributed to the outcome.',
-      no:'Equipment and maintenance were not identified as contributing factors.' },
-    { id:'d3', text:'Did a communication breakdown contribute to the outcome?',
-      yes:'A breakdown in communication contributed to the outcome.',
-      no:'Communication was not identified as a contributing factor.' },
-    { id:'d4', text:'Has this type of issue occurred before?',
-      yes:'This is a recurring issue that has been observed previously.',
-      no:'This does not appear to be a recurring issue.' },
-  ],
-  C: [
-    { id:'c1', text:'Did the mission or task ultimately meet its objective?',
-      yes:'The mission or task ultimately met its stated objective.',
-      no:'The mission or task did not fully meet its stated objective.' },
-    { id:'c2', text:'Is the current SOP adequate to prevent recurrence?',
-      yes:'The current SOP is assessed as adequate to prevent recurrence.',
-      no:'The current SOP is assessed as inadequate to prevent recurrence.' },
-    { id:'c3', text:'Does this issue pose a risk to future operations if left unaddressed?',
-      yes:'This issue poses a risk to future operations if left unaddressed.',
-      no:'This issue is not assessed as a significant risk to future operations.' },
-    { id:'c4', text:'Is immediate corrective action required?',
-      yes:'Immediate corrective action is required.',
-      no:'Immediate corrective action is not required at this time.' },
-  ],
-  R: [
-    { id:'r1', text:'Should this be escalated to command for review?',
-      yes:'Recommend escalating this report to command for review.',
-      no:'Escalation to command is not recommended at this time.' },
-    { id:'r2', text:'Should additional training be conducted?',
-      yes:'Recommend additional training be conducted.',
-      no:'Additional training is not recommended at this time.' },
-    { id:'r3', text:'Should the SOP be revised?',
-      yes:'Recommend the SOP be revised.',
-      no:'An SOP revision is not recommended at this time.' },
-    { id:'r4', text:'Should this report be distributed as a lessons-learned item to other units?',
-      yes:'Recommend distributing this report as a lessons-learned item to other units.',
-      no:'Distribution to other units is not recommended at this time.' },
-  ],
-};
+// Questions are no longer hardcoded here — they are loaded from
+// questions.json (see fetchPublishedQuestions() / init() below). This
+// empty shape is only used as a placeholder before that file has loaded,
+// or if it can't be reached at all (e.g. no internet connection and no
+// cached copy).
+const EMPTY_QUESTIONS = { O:[], D:[], C:[], R:[] };
 
 function cloneDefaults(){
-  return JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
+  return JSON.parse(JSON.stringify(EMPTY_QUESTIONS));
 }
 
 function makeEmptyDrafts(){
@@ -483,15 +437,37 @@ function questionCount(){
 function buildFlat(){
   return PHASES.flatMap(p => state.questions[p.key].map(q => ({...q, phase:p.key})));
 }
-  
+
 function formatDateDDMMYYYY(dateStr) {
+  if(!dateStr) return '';
+
+  // Already dd/mm/yyyy (the format this app now stores) — just validate & return.
+  let m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dateStr.trim());
+  if(m) return `${m[1]}/${m[2]}/${m[3]}`;
+
+  // Legacy ISO yyyy-mm-dd values saved by older versions of this app.
+  m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr.trim());
+  if(m) return `${m[3]}/${m[2]}/${m[1]}`;
+
+  // Fallback for anything else parseable by the Date constructor.
   const d = new Date(dateStr);
+  if(isNaN(d.getTime())) return dateStr;
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
   return `${day}/${month}/${year}`;
 }
-  
+
+function flatpickrParse(dateStr) {
+  if(!dateStr) return null;
+  let m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dateStr.trim());
+  if(m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr.trim());
+  if(m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function render(){
   persist();
   if(state.screen==='intake') return renderIntake();
@@ -515,7 +491,7 @@ function renderIntake(){
       </div>
       <div class="field">
         <label>Date</label>
-        <input id="f-date" type="date" value="${esc(state.meta.date)}">
+        <input id="f-date" type="text" inputmode="numeric" placeholder="dd/mm/yyyy" autocomplete="off" readonly value="${esc(formatDateDDMMYYYY(state.meta.date))}">
       </div>
       <div class="field">
         <label>Prepared By (optional)</label>
@@ -525,13 +501,20 @@ function renderIntake(){
         <button class="link-btn" id="clear-saved" type="button" style="color:var(--ink-dim);margin-right:auto;">Clear saved data</button>
         <button class="link-btn" id="edit-q" type="button">Customize the ${n} questions →</button>
       </div>
-      <button class="btn btn-primary btn-full" id="begin">Begin Report — ${n} Question${n===1?'':'s'}</button>
-      <div class="swipe-hint" style="margin-top:10px;">Your progress is saved automatically on this device.</div>
+      <button class="btn btn-primary btn-full" id="begin" ${n===0?'disabled':''}>Begin Report — ${n} Question${n===1?'':'s'}</button>
+      <div class="swipe-hint" style="margin-top:10px;">${n===0
+        ? 'No questions loaded yet — add a questions.json file next to index.html, or use "Customize the questions" to add some.'
+        : 'Your progress is saved automatically on this device.'}</div>
     </div>
   `;
   document.getElementById('f-title').oninput = e => { state.meta.title = e.target.value; persist(); };
   document.getElementById('f-unit').oninput = e => { state.meta.unit = e.target.value; persist(); };
-  document.getElementById('f-date').oninput = e => { state.meta.date = e.target.value; persist(); };
+  flatpickr('#f-date', {
+    dateFormat: 'd/m/Y',
+    allowInput: false,
+    defaultDate: state.meta.date ? flatpickrParse(state.meta.date) : null,
+    onChange: (selectedDates, dateStr) => { state.meta.date = dateStr; persist(); }
+  });
   document.getElementById('f-author').oninput = e => { state.meta.author = e.target.value; persist(); };
   document.getElementById('clear-saved').onclick = () => {
     if(confirm('Clear the saved report from this device? This cannot be undone.')){
@@ -583,7 +566,7 @@ function renderEdit(){
   });
   html += `
     <div class="report-actions">
-      <button class="btn btn-ghost" id="e-reset" type="button">Reset to Defaults</button>
+      <button class="btn btn-ghost" id="e-reset" type="button">Reload Published Questions</button>
       <button class="btn btn-ghost" id="e-import" type="button">⭱ Import questions.json</button>
       <button class="btn btn-ghost" id="e-export" type="button">⭳ Export questions.json</button>
       <button class="btn btn-primary" id="e-done" type="button">Save &amp; Back</button>
@@ -623,10 +606,20 @@ function renderEdit(){
       renderEdit();
     };
   });
-  document.getElementById('e-reset').onclick = () => {
-    if(confirm('Reset all questions to the default set? This discards your edits.')){
-      state.questions = cloneDefaults();
+  document.getElementById('e-reset').onclick = async () => {
+    if(!confirm('Reload questions from the published questions.json? This discards your local edits.')) return;
+    const btn = document.getElementById('e-reset');
+    const old = btn.textContent;
+    btn.textContent = 'Reloading…';
+    btn.disabled = true;
+    const data = await fetchPublishedQuestions();
+    if(data){
+      state.questions = data;
       renderEdit();
+    }else{
+      alert('Could not load questions.json — check that the file exists next to index.html and is reachable.');
+      btn.textContent = old;
+      btn.disabled = false;
     }
   };
   document.getElementById('e-export').onclick = () => {
@@ -839,9 +832,14 @@ function renderReport(){
     </div>
   `;
 
-  document.getElementById('restart').onclick = () => {
-    const keepQuestions = state.questions;
-    state = { screen:'intake', meta:{title:'',unit:'',date:'',author:''}, questions:keepQuestions, draft:makeEmptyDrafts(), flat:[], index:0, answers:{} };
+  document.getElementById('restart').onclick = async () => {
+    const btn = document.getElementById('restart');
+    const old = btn.textContent;
+    btn.textContent = 'Loading…';
+    btn.disabled = true;
+    const fresh = await fetchPublishedQuestions();
+    const questions = fresh || state.questions; // fall back to what we already have if unreachable
+    state = { screen:'intake', meta:{title:'',unit:'',date:'',author:''}, questions, draft:makeEmptyDrafts(), flat:[], index:0, answers:{} };
     render();
   };
   document.getElementById('copy').onclick = async () => {
@@ -907,7 +905,40 @@ function renderReport(){
   };
 }
 
-render();
+// --- Load the centrally-maintained question set from questions.json -----
+// questions.json (published next to index.html) is the only source of
+// question content — nothing is hardcoded in this file, and it is never
+// read from localStorage/cookies. cache:'no-store' forces a real network
+// request every time, so editing questions.json and reloading (or starting
+// a new report) always shows the latest published version. This function
+// is used on startup, by "Start New Report", and by the "Reload Published
+// Questions" button in the editor.
+function fetchPublishedQuestions(){
+  return fetch('./questions.json', {cache:'no-store'})
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if(!data) return null;
+      const validShape = PHASES.every(p => Array.isArray(data[p.key]) &&
+        data[p.key].every(q => q && typeof q.id==='string' && typeof q.text==='string'));
+      return validShape ? data : null;
+    })
+    .catch(() => null); // no questions.json published yet, offline, or opened via file://
+}
+
+async function init(){
+  // Always try to fetch the freshest questions.json over the network first.
+  // This takes priority over whatever was cached in localStorage from a
+  // previous visit, so a change to questions.json is picked up on the very
+  // next load — not just eventually. It never touches state.answers/meta/
+  // progress, so an in-progress report on this device is not disturbed.
+  const published = await fetchPublishedQuestions();
+  if(published && JSON.stringify(published) !== JSON.stringify(state.questions)){
+    state.questions = published;
+    persist();
+  }
+  render();
+}
+init();
 
 // --- PWA: service worker registration ---------------------------------
 if('serviceWorker' in navigator){
@@ -942,29 +973,6 @@ window.addEventListener('appinstalled', () => {
   if(installBtn) installBtn.style.display = 'none';
   deferredInstallPrompt = null;
 });
-
-// --- Load a centrally-maintained question set (questions.json), if present ---
-// This lets you publish question changes just by uploading a questions.json
-// file next to index.html — no code editing required. It runs on every page
-// load (not just for first-time visitors) so published edits reach devices
-// that already have a saved report. It only ever touches state.questions —
-// it never touches state.answers/meta/progress, so it won't disturb an
-// in-progress report.
-(function loadPublishedQuestions(){
-  fetch('./questions.json', {cache:'no-store'})
-    .then(r => r.ok ? r.json() : null)
-    .then(data => {
-      if(!data) return;
-      const validShape = PHASES.every(p => Array.isArray(data[p.key]) &&
-        data[p.key].every(q => q && typeof q.id==='string' && typeof q.text==='string'));
-      if(!validShape) return;
-      if(JSON.stringify(data) === JSON.stringify(state.questions)) return; // already in sync
-      state.questions = data;
-      persist();
-      if(state.screen==='intake' || state.screen==='edit') render();
-    })
-    .catch(() => { /* no questions.json published yet, offline, or opened via file:// — keep current set */ });
-})();
 </script>
 
 </body>
