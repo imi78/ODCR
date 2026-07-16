@@ -14,11 +14,6 @@
 <meta name="apple-mobile-web-app-title" content="ODCR Report">
 <link rel="icon" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
-
-<!-- Flatpickr: gives every browser/OS the same dd/mm/yyyy date picker -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
-
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
 
@@ -163,7 +158,6 @@ body{
 }
 .field input:focus, .field textarea:focus{border-color:var(--phosphor);border-width:1.5px;background:var(--panel);}
 .field textarea{resize:vertical;min-height:60px;font-family:'Roboto Mono', monospace;font-size:13px;}
-.field input[readonly]{cursor:pointer;background:var(--panel-2);}
 
 .btn{
   font-family:'Roboto', sans-serif;
@@ -420,16 +414,6 @@ function formatDateDDMMYYYY(dateStr) {
   return `${day}/${month}/${year}`;
 }
 
-function flatpickrParse(dateStr) {
-  if(!dateStr) return null;
-  let m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dateStr.trim());
-  if(m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
-  m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr.trim());
-  if(m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? null : d;
-}
-
 function render(){
   persist();
   if(state.screen==='intake') return renderIntake();
@@ -452,7 +436,7 @@ function renderIntake(){
       </div>
       <div class="field">
         <label>Date</label>
-        <input id="f-date" type="text" inputmode="numeric" placeholder="dd/mm/yyyy" autocomplete="off" readonly value="${esc(formatDateDDMMYYYY(state.meta.date))}">
+        <input id="f-date" type="date" value="${esc(state.meta.date)}">
       </div>
       <div class="field">
         <label>Prepared By (optional)</label>
@@ -469,12 +453,7 @@ function renderIntake(){
   `;
   document.getElementById('f-title').oninput = e => { state.meta.title = e.target.value; persist(); };
   document.getElementById('f-unit').oninput = e => { state.meta.unit = e.target.value; persist(); };
-  flatpickr('#f-date', {
-    dateFormat: 'd/m/Y',
-    allowInput: false,
-    defaultDate: state.meta.date ? flatpickrParse(state.meta.date) : null,
-    onChange: (selectedDates, dateStr) => { state.meta.date = dateStr; persist(); }
-  });
+  document.getElementById('f-date').oninput = e => { state.meta.date = e.target.value; persist(); };
   document.getElementById('f-author').oninput = e => { state.meta.author = e.target.value; persist(); };
   document.getElementById('clear-saved').onclick = () => {
     if(confirm('Clear the saved report from this device? This cannot be undone.')){
