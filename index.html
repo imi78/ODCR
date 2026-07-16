@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>ODCR Field Report</title>
+<title>ODCR Report</title>
 
 <!-- PWA -->
 <link rel="manifest" href="./manifest.webmanifest">
@@ -338,7 +338,7 @@ body{
 
   <div class="masthead">
     <div>
-      <h1>ODCR FIELD REPORT</h1>
+      <h1>ODCR REPORT</h1>
       <div class="sub">Observation · Discussion · Conclusion · Recommendation</div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
@@ -483,7 +483,15 @@ function questionCount(){
 function buildFlat(){
   return PHASES.flatMap(p => state.questions[p.key].map(q => ({...q, phase:p.key})));
 }
-
+  
+function formatDateDDMMYYYY(dateStr) {
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+  
 function render(){
   persist();
   if(state.screen==='intake') return renderIntake();
@@ -492,18 +500,18 @@ function render(){
   if(state.screen==='detail') return renderDetail();
   if(state.screen==='report') return renderReport();
 }
-
+   
 function renderIntake(){
   const n = questionCount();
   app.innerHTML = `
     <div class="panel">
       <div class="field">
         <label>Report Title</label>
-        <input id="f-title" type="text" placeholder="e.g. Night Convoy Exercise, Sector 4" value="${esc(state.meta.title)}">
+        <input id="f-title" type="text" placeholder="e.g. Night Convoy Exercise" value="${esc(state.meta.title)}">
       </div>
       <div class="field">
         <label>Unit</label>
-        <input id="f-unit" type="text" placeholder="e.g. 2nd Platoon, B Co." value="${esc(state.meta.unit)}">
+        <input id="f-unit" type="text" placeholder="e.g. 2nd Platoon, B Coy" value="${esc(state.meta.unit)}">
       </div>
       <div class="field">
         <label>Date</label>
@@ -803,7 +811,7 @@ function renderReport(){
       <div class="report-head">Compiled Report</div>
       <div class="report-meta-row"><span>Title</span><b>${esc(state.meta.title||'Untitled Report')}</b></div>
       ${state.meta.unit ? `<div class="report-meta-row"><span>Unit</span><b>${esc(state.meta.unit)}</b></div>` : ''}
-      ${state.meta.date ? `<div class="report-meta-row"><span>Date</span><b>${esc(state.meta.date)}</b></div>` : ''}
+      ${state.meta.date ? `<div class="report-meta-row"><span>Date</span><b>${formatDateDDMMYYYY(state.meta.date)}</b></div>` : ''}
       ${state.meta.author ? `<div class="report-meta-row"><span>Prepared by</span><b>${esc(state.meta.author)}</b></div>` : ''}
 
       <div style="margin-top:20px;">
